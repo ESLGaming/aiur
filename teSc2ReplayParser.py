@@ -19,7 +19,7 @@ class teSc2ReplayParser:
     replayGameEvents = []
     replayMessageEvents = []
     replayTrackerEvents = []
-    replayAttributeEvents = {}
+    replayAttributeEvents = []
 
     # Events counting into the APM of a player
     apmEvents = ['NNet.Game.SSelectionDeltaEvent',
@@ -128,10 +128,7 @@ class teSc2ReplayParser:
 
     def getAttributeEvents(self):
         if len(self.replayAttributeEvents) <= 0:
-            # This returns only a generator, we have to iterate through it to get all the events
-            attributeGenerator = self.protocol.decode_replay_attributes_events(self.mpqArchive.read_file('replay.attributes.events'))
-            for event in attributeGenerator:
-                self.replayAttributeEvents.append(event)
+            self.replayAttributeEvents = self.protocol.decode_replay_attributes_events(self.mpqArchive.read_file('replay.attributes.events'))
 
         return self.replayAttributeEvents
 
@@ -250,6 +247,23 @@ class teSc2ReplayParser:
 
         return None
 
+    ## Returns the match size / game mode (XonX).
+    #
+    #  Looks up the special attribute scope 16, containing general match
+    #  attributes, and looks for attribute 2001, the match size.
+    #
+    #  @param self The object pointer.
+    #
+    #  @return string|None The match size in format 'XvX' or None if not found.
+    def getGameMode(self):
+        attributeEvents = self.getAttributeEvents()
+
+        if 16 in attributeEvents['scopes']:
+            if 2001 in attributeEvents['scopes'][16]:
+                return attributeEvents['scopes'][16][2001][0]['value']
+
+        return None
+
     ## Returns the match document incl. various information about the match.
     #
     #  Builds the match document with the list of players, observers, computers,
@@ -269,7 +283,9 @@ class teSc2ReplayParser:
         players = {'humans': {},
                    'computers': {}}
         observers = {}
-        matchWinner = -1
+        teams = []
+        matchWinnerToon = -1
+        matchWinnerTeam = -1
         # TODO: This loop may need some refactoring to make it less complex (e.g. too much if/else)!
         for slot in slots:
             # AIs don't have a userId, so we have to get the playername via the playerList
@@ -288,6 +304,7 @@ class teSc2ReplayParser:
             else:
                 continue
 
+            # Create a dict containg information for every type of user
             data = {'user_id': userId,
                     #Some kind of a unique identifier
                     'toon': {'handle': toonHandle},
@@ -295,6 +312,10 @@ class teSc2ReplayParser:
                     'clan_tag': clanTag,
                     'fullname': (('[' + clanTag + ']') if len(clanTag) > 0 else '') + playerName,
                     'team_id': slot['m_teamId']}
+
+            # Collect all teamIDs
+            if not data['team_id'] in teams:
+                teams.append(data['team_id'])
 
             if slot['m_observe'] > self.PLAYER_OBSERVE_IS_NO_OBSERVER:
                 observers[toonHandle] = data
@@ -305,9 +326,10 @@ class teSc2ReplayParser:
                 if player == None:
                     continue
 
-                # Is this the matchwinner?
+                # Is this the matchwinner (for team matches, the toonHandle doesn't matter)?
                 if player['m_result'] == self.RESULT_WINNER:
-                    matchWinner = toonHandle
+                    matchWinnerToon = toonHandle
+                    matchWinnerTeam = data['team_id']
 
                 data.update({'player_id': player['m_playerId'],
                              'toon': dict(data['toon'].items() + {'programId': player['m_toon']['m_programId'],
@@ -327,16 +349,21 @@ class teSc2ReplayParser:
                 else:
                     players['humans'][toonHandle] = data
 
-        playersPerTeam = int(initData['m_syncLobbyState']['m_gameDescription']['m_maxUsers'] / initData['m_syncLobbyState']['m_gameDescription']['m_maxTeams'])
+        gameMode = self.getGameMode()
+        # Fallback, if the attribute couldn't be found
+        if not gameMode:
+            playersPerTeam = len(players['humans']) / len(teams)
+            gameMode = '%dv%d' % (playersPerTeam, playersPerTeam)
 
         return {'mapname': details['m_title'],
                 'started_at': datetime.fromtimestamp(self.convertWindowsNtTimestampToUnixTimestamp(details['m_timeUTC'])).strftime('%Y-%m-%d %H:%M:%S'),
                 'utc_timezone': self.convertTimezoneOffsetToUtcTimezone(details['m_timeLocalOffset']),
                 'duration': round(header['m_elapsedGameLoops'] / 16),
-                'winner_toon_handle': matchWinner,
+                'winner_toon_handle': matchWinnerToon,
+                'winner_team_id': matchWinnerTeam,
                 'version': {'number': str(header['m_version']['m_major']) + '.' + str(header['m_version']['m_minor']) + '.' + str(header['m_version']['m_revision']),
                             'build': header['m_version']['m_build']},
-                'gamemode': str(playersPerTeam) + 'v' + str(playersPerTeam),
+                'gamemode': gameMode,
                 'gamespeed': self.gamespeeds[initData['m_syncLobbyState']['m_gameDescription']['m_gameSpeed']],
                 'host_user_id': initData['m_syncLobbyState']['m_lobbyState']['m_hostUserId'],
                 'players': players,
