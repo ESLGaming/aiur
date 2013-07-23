@@ -37,9 +37,11 @@ class teSc2ReplayParser:
                   3: 'Fast',
                   4: 'Faster'}
     # Mapping of region codes
-    regionCodes = {1: 'us',
-                   2: 'eu',
-                   3: 'kr'}
+    regionCodes = {1: 'us', # us.battle.net
+                   2: 'eu', # eu.battle.net
+                   3: 'kr', # kr.battle.net
+                   5: 'cn', # cn.battle.net
+                   6: 'sea'} # sea.battle.net
 
     # "Constants"
     PLAYER_CONTROL_HUMAN = 2
@@ -291,15 +293,15 @@ class teSc2ReplayParser:
             # AIs don't have a userId, so we have to get the playername via the playerList
             if slot['m_control'] == self.PLAYER_CONTROL_AI:
                 player = self.getPlayerEntryForSlotId(slot['m_workingSetSlotId'])
-                playerName = self.stripHtmlFromString(player['m_name'])
+                playerName = self.stripHtmlFromString(player['m_name'] if player['m_name'] else '')
                 clanTag = ''
                 userId = -1
                 # AIs also don't have a toon, but we need them! So generate an 'invalid' one out of the playerId
                 toonHandle = '0-S2-0-' + str(player['m_playerId'])
             elif slot['m_userId'] != None:
                 userId = slot['m_userId']
-                playerName = self.stripHtmlFromString(playersInLobby[userId]['m_name'])
-                clanTag = self.stripHtmlFromString(playersInLobby[userId]['m_clanTag'])
+                playerName = self.stripHtmlFromString(playersInLobby[userId]['m_name'] if playersInLobby[userId]['m_name'] else '')
+                clanTag = self.stripHtmlFromString(playersInLobby[userId]['m_clanTag'] if playersInLobby[userId]['m_clanTag'] else '')
                 toonHandle = slot['m_toonHandle']
             else:
                 continue
