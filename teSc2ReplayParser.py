@@ -276,7 +276,7 @@ class teSc2ReplayParser:
     #  observer, etc.) of a single SC2 match generates the same hash, so you
     #  know which replays belong to one SC2 match and therefore for one round
     #  in a bestOfX match.
-    #  For generating the has, the userIds assigned to the toonHandles of every
+    #  For generating the hash, the userIds assigned to the toonHandles of every
     #  player is used, plus the randomSeed, which is randomly generated per
     #  match, but is not unique!
     #
@@ -390,7 +390,7 @@ class teSc2ReplayParser:
             gameMode = '%dv%d' % (playersPerTeam, playersPerTeam)
 
         return {'mapname': details['m_title'],
-                'replayHash': self.generateReplayHash(players),
+                'replay_hash': self.generateReplayHash(players),
                 'started_at': datetime.fromtimestamp(self.convertWindowsNtTimestampToUnixTimestamp(details['m_timeUTC'])).strftime('%Y-%m-%d %H:%M:%S'),
                 'utc_timezone': self.convertTimezoneOffsetToUtcTimezone(details['m_timeLocalOffset']),
                 'duration': round(header['m_elapsedGameLoops'] / 16),
