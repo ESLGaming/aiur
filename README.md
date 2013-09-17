@@ -12,11 +12,10 @@ Aiur is a Python module, not a standalone program, so it needs to be imported
 into another Python script. To use the module, clone the aiur git repository
 to a subdirectory of the script that will use it. Aiur includes Blizzard's
 s2protocol library as a submodule, so you also have to pull down the submodule
-code.
+code. Once you have cloned the aiur repository, you can get the submodule code
+by executing these commands in the repository directory:
 
 ```bash
-$ git clone https://github.com/TurtleEntertainment/aiur.git
-$ cd aiur
 $ git submodule init
 $ git submodule update
 ```
