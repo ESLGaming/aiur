@@ -4,7 +4,7 @@ aiur
 Replay parser and analyzer for StarCraft 2, using the s2protocol library
 released by Blizzard.
 
-# Usage
+## Usage
 
 ### Getting the code
 
@@ -34,7 +34,7 @@ parser = teSc2ReplayParser.teSc2ReplayParser("Antiga Shipyard.SC2Replay")
 print parser.getMatchWinner()['m_name']
 ```
 
-# License
+## License
 
 This project is released under the 'Creative Commons Attribution-ShareAlike 3.0
 Unported (CC BY-SA 3.0)' license. A short, human-readable summary can be found
