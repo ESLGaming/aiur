@@ -23,9 +23,10 @@ $ git submodule update
 
 ### Using the module
 
-You first need to import the module, then initialize the class with the
-path to an SC2Replay file.  This example script will open a replay file in
-the current directory and print name of the winner to the console:
+You first need to import the module, then initialize an instance of the 
+teSc2ReplayParser class with the path to an SC2Replay file.  The following
+example script will open a replay file in the current directory and print the
+name of the match winner to the console:
 
 ```python
 from aiur import teSc2ReplayParser
