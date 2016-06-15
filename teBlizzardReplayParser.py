@@ -56,7 +56,7 @@ class teBlizzardReplayParser:
 
     GAME_PROTOCOLS = {
         "sc2" : 's2protocol',
-        "hots": 'heroprotocol'
+        "hero": 'heroprotocol'
     }
 
 
