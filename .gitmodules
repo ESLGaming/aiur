@@ -4,5 +4,5 @@
 	branch = master
 [submodule "heroprotocol"]
 	path = heroprotocol
-	url = git@github.com:Blizzard/heroprotocol.git
+	url = git://github.com/Blizzard/heroprotocol.git
 	branch = master
