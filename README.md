@@ -1,7 +1,7 @@
 aiur
 ====
 
-Replay parser and analyzer for StarCraft 2, using the s2protocol released by Blizzard
+Replay parser and analyser for Blizzard Replays, using the s2protocol and heroprotocol released by Blizzard
 
 # License
 
