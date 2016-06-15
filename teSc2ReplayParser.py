@@ -1,18 +1,18 @@
 from datetime import datetime
 import hashlib
 
-# Library to read Blizzards MPYQ files
+# Library to read Blizzard's MPYQ files
 from s2protocol.mpyq import mpyq
 # Import the oldest protocol to read the replay header, which works with every
 # replay version
 from s2protocol import protocol15405
 
 
-## Evaluates sc2replays and provides several methods to get data out of it.
+## Evaluates sc2replays and provides several methods to get data out of them.
 #
 #  Currently provides these methods/data:
 #  - Get the match winner
-#  - Get a match object containing several information of the match
+#  - Get a match object containing some information from the match
 class teSc2ReplayParser:
     replayHeader = {}
     replayDetails = {}
@@ -22,7 +22,7 @@ class teSc2ReplayParser:
     replayTrackerEvents = []
     replayAttributeEvents = []
 
-    # Events counting into the APM of a player
+    # Events that count toward the APM of a player
     apmEvents = ['NNet.Game.SSelectionDeltaEvent',
                  'NNet.Game.SCmdEvent',
                  'NNet.Game.SControlGroupUpdateEvent'
@@ -31,7 +31,7 @@ class teSc2ReplayParser:
                  # 'NNet.Game.SCameraUpdateEvent',
                  # 'NNet.Game.SCameraSaveEvent'
                 ]
-    # Mapping of gamespeed indentifiers
+    # Mapping of gamespeed identifiers
     gamespeeds = {0: 'Slower',
                   1: 'Slow',
                   2: 'Normal',
@@ -86,7 +86,7 @@ class teSc2ReplayParser:
     def getDetails(self):
         if len(self.replayDetails) <= 0:
             self.replayDetails = self.protocol.decode_replay_details(self.mpqArchive.read_file('replay.details'))
-            # Some old replays also (adidtionally to the initData) have these senseless cache_handles including invalid unicode chars
+            # Some old replays also (in addition to the initData) have these senseless cache_handles including invalid unicode chars
             # del self.replayDetails['m_cacheHandles']
 
         return self.replayDetails
@@ -101,7 +101,7 @@ class teSc2ReplayParser:
 
     def getGameEvents(self):
         if len(self.replayGameEvents) <= 0:
-            # This returns only a generator, we have to iterate through it to get all the events
+            # This only returns a generator, so we have to iterate through it to get all the events
             gameGenerator = self.protocol.decode_replay_game_events(self.mpqArchive.read_file('replay.game.events'))
             for event in gameGenerator:
                 self.replayGameEvents.append(event)
@@ -110,7 +110,7 @@ class teSc2ReplayParser:
 
     def getMessageEvents(self):
         if len(self.replayMessageEvents) <= 0:
-            # This returns only a generator, we have to iterate through it to get all the events
+            # This only returns a generator, so we have to iterate through it to get all the events
             messageGenerator = self.protocol.decode_replay_message_events(self.mpqArchive.read_file('replay.message.events'))
             for event in messageGenerator:
                 self.replayMessageEvents.append(event)
@@ -119,11 +119,11 @@ class teSc2ReplayParser:
 
     def getTrackerEvents(self):
         if len(self.replayTrackerEvents) <= 0:
-            # This returns only a generator, we have to iterate through it to get all the events
+            # This only returns a generator, so we have to iterate through it to get all the events
             trackerGenerator = self.protocol.decode_replay_tracker_events(self.mpqArchive.read_file('replay.tracker.events'))
             for event in trackerGenerator:
                 if event.has_key('m_unitTagIndex') and event.has_key('m_unitTagRecycle'):
-                    # Directky generate the unit_tag, as we will need it anyways.
+                    # Directly generate the unit_tag, as we will need it anyways.
                     event['_unit_tag'] = self.protocol.unit_tag(event['m_unitTagIndex'], event['m_unitTagRecycle'])
                 self.replayTrackerEvents.append(event)
 
@@ -143,24 +143,24 @@ class teSc2ReplayParser:
     #  @param self   The object pointer.
     #  @param string The string to remove the HTML from.
     #
-    #  @return string The tydied string.
+    #  @return string The tidied string.
     def stripHtmlFromString(self, string):
         return string.replace('<sp/>', ' ')
 
     ## Remove zero bytes (\x00) from a string.
     #
-    #  Some strings contain zero bytes which destroys the string
+    #  Some strings contain zero bytes which destroy the string.
     #
     #  @param self   The object pointer.
     #  @param string The string to remove the zero bytes from.
     #
-    #  @return string The tydied string.
+    #  @return string The tidied string.
     def stripZeroBytesFromString(self, string):
         return str(string.strip(u'\u0000'))
 
     ## Convert a Windows NT timestamp to a UNIX timestamp.
     #
-    #  Windows has it's own timestamp format and Blizzard uses it. This method
+    #  Windows has its own timestamp format and Blizzard uses it. This method
     #  decodes this timestamp using a tutorial linked in the @see.
     #
     #  @param self        The object pointer.
@@ -171,14 +171,14 @@ class teSc2ReplayParser:
     #  @return int The UNIX timestamp for the given NT timestamp.
     def convertWindowsNtTimestampToUnixTimestamp(self, ntTimestamp):
         return int((ntTimestamp / 10000000) - 11644473600)
-        # Alternative way would be to substract the 100 nanoseconds since
+        # Alternative way would be to subtract the 100 nanoseconds since
         # 1601-01-01 and convert it to seconds:
         # (ntTimestamp - 134774 * 24 * 60 * 60 * 10**7) / 10**7
         # return int((ntTimestamp - 116444736000000000) / 10**7)
 
     ## Convert the timezone offset from nanoseconds to hours.
     #
-    #  The timezone offset is stored as 100 nanosends, so for example UTC+2
+    #  The timezone offset is stored as 100 nanoseconds, so for example UTC+2
     #  would be 2 * 60*60*10^7 = 72000000000.
     #
     #  @param self        The object pointer.
@@ -202,7 +202,7 @@ class teSc2ReplayParser:
     def getPlayerEntryForToon(self, toon):
         playersList = self.getDetails()['m_playerList']
         for i, player in enumerate(playersList):
-            # There are invalid chars (0bytes or sth) in these strings. so strip them before and convert it back from unicode- to regular string
+            # There are invalid chars (0bytes or sth) in these strings, so strip them before and convert them back from unicode to regular strings
             player['m_toon']['m_programId'] = self.stripZeroBytesFromString(player['m_toon']['m_programId'])
 
             playerToon = str(player['m_toon']['m_region']) + '-' + player['m_toon']['m_programId'] + '-' + str(player['m_toon']['m_realm']) + '-' + str(player['m_toon']['m_id'])
@@ -224,7 +224,7 @@ class teSc2ReplayParser:
     def getPlayerEntryForSlotId(self, slotId):
         playersList = self.getDetails()['m_playerList']
         for i, player in enumerate(playersList):
-            # There are invalid chars (0bytes or sth) in these strings. so strip them before and convert it back from unicode- to regular string
+            # There are invalid chars (0bytes or sth) in these strings, so strip them before and convert them back from unicode to regular strings
             player['m_toon']['m_programId'] = self.stripZeroBytesFromString(player['m_toon']['m_programId'])
 
             if player['m_workingSetSlotId'] == slotId:
@@ -277,7 +277,7 @@ class teSc2ReplayParser:
     #  know which replays belong to one SC2 match and therefore for one round
     #  in a bestOfX match.
     #  For generating the hash, the userIds assigned to the toonHandles of every
-    #  player is used, plus the randomSeed, which is randomly generated per
+    #  player are used, plus the randomSeed, which is randomly generated per
     #  match, but is not unique!
     #
     #  @param self The object pointer.
@@ -288,7 +288,7 @@ class teSc2ReplayParser:
         initData = self.getInitData()
         hashData = []
 
-        # Iterate over our playerList and concatinate the userId with the
+        # Iterate over our playerList and concatenate the userId with the
         # toonHandle
         for key, player in players['humans'].items():
             hashData.append(str(player['user_id']) + ':' + player['toon']['handle'])
@@ -298,10 +298,11 @@ class teSc2ReplayParser:
         # Hash our data with the md5 algorithm and return it
         return hashlib.md5(';'.join(hashData)).hexdigest()
 
-    ## Returns the match document incl. various information about the match.
+    ## Returns the match document incl. various pieces of information about the
+    #  match.
     #
     #  Builds the match document with the list of players, observers, computers,
-    #  map name, the matcwinner, duration, matchtime, etc...
+    #  map name, the matchwinner, duration, matchtime, etc...
     #
     #  @param self The object pointer.
     #
@@ -322,13 +323,13 @@ class teSc2ReplayParser:
         matchWinnerTeam = -1
         # TODO: This loop may need some refactoring to make it less complex (e.g. too much if/else)!
         for slot in slots:
-            # AIs don't have a userId, so we have to get the playername via the playerList
+            # AIs don't have userIds, so we have to get the playername via the playerList
             if slot['m_control'] == self.PLAYER_CONTROL_AI:
                 player = self.getPlayerEntryForSlotId(slot['m_workingSetSlotId'])
                 playerName = self.stripHtmlFromString(player['m_name'] if player['m_name'] else '')
                 clanTag = ''
                 userId = -1
-                # AIs also don't have a toon, but we need them! So generate an 'invalid' one out of the playerId
+                # AIs also don't have toons, but we need them! So generate an 'invalid' one out of the playerId
                 toonHandle = '0-S2-0-' + str(player['m_playerId'])
             elif slot['m_userId'] != None:
                 userId = slot['m_userId']
@@ -338,7 +339,7 @@ class teSc2ReplayParser:
             else:
                 continue
 
-            # Create a dict containg information for every type of user
+            # Create a dict containing information for every type of user
             data = {'user_id': userId,
                     #Some kind of a unique identifier
                     'toon': {'handle': toonHandle},
@@ -356,7 +357,7 @@ class teSc2ReplayParser:
             else:
                 player = self.getPlayerEntryForSlotId(slot['m_workingSetSlotId'])
 
-                # Something strange happend: The user is not in the playerslist!
+                # Something strange happened: The user is not in the playerslist!
                 if player == None:
                     continue
 
