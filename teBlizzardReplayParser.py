@@ -38,6 +38,7 @@ class teBlizzardReplayParser:
                   2: 'Normal',
                   3: 'Fast',
                   4: 'Faster'}
+
     # Mapping of region codes
     regionCodes = {1: 'us', # us.battle.net
                    2: 'eu', # eu.battle.net
@@ -55,8 +56,14 @@ class teBlizzardReplayParser:
     RESULT_LOSER = 2
 
     GAME_PROTOCOLS = {
-        "sc2" : 's2protocol',
-        "hero": 'heroprotocol'
+        "sc2" : {
+            "protocol":  "s2protocol",
+            "programId": "S2"
+        },
+        "hero": {
+            "protocol":  "heroprotocol",
+            "programId": "Hero"
+        }
     }
 
 
@@ -71,12 +78,13 @@ class teBlizzardReplayParser:
         if game not in self.GAME_PROTOCOLS:
             raise UnknownGameException(game)
 
+        self.game = game
         self.replayFilename = replayFilename
         self.mpqArchive = mpyq.MPQArchive(self.replayFilename)
 
         # The header's baseBuild determines which protocol to use (this works with every version)
         baseBuild = self.getHeader()['m_version']['m_baseBuild']
-        packageName = self.GAME_PROTOCOLS[game]
+        packageName = self.GAME_PROTOCOLS[game]["protocol"]
         if __package__ is not None:
             packageName = '%s.%s' % (__package__, packageName)
         try:
@@ -339,7 +347,7 @@ class teBlizzardReplayParser:
                 clanTag = ''
                 userId = -1
                 # AIs also don't have a toon, but we need them! So generate an 'invalid' one out of the playerId
-                toonHandle = '0-S2-0-' + str(player['m_playerId'])
+                toonHandle = '0-' + str(self.GAME_PROTOCOLS[self.game]["programId"]) + '-0-' + str(player['m_playerId'])
             elif slot['m_userId'] != None:
                 userId = slot['m_userId']
                 playerName = self.stripHtmlFromString(playersInLobby[userId]['m_name'] if playersInLobby[userId]['m_name'] else '')
