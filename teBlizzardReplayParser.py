@@ -6,14 +6,15 @@ from s2protocol.mpyq import mpyq
 # Import the oldest protocol to read the replay header, which works with every
 # replay version
 from s2protocol import protocol15405
+from heroprotocol import protocol29406
 
 
-## Evaluates sc2replays and provides several methods to get data out of it.
+## Evaluates blizzard based replays and provides several methods to get data out of it.
 #
 #  Currently provides these methods/data:
 #  - Get the match winner
 #  - Get a match object containing several information of the match
-class teSc2ReplayParser:
+class teBlizzardReplayParser:
     replayHeader = {}
     replayDetails = {}
     replayInitData = {}
@@ -37,6 +38,7 @@ class teSc2ReplayParser:
                   2: 'Normal',
                   3: 'Fast',
                   4: 'Faster'}
+
     # Mapping of region codes
     regionCodes = {1: 'us', # us.battle.net
                    2: 'eu', # eu.battle.net
@@ -53,22 +55,38 @@ class teSc2ReplayParser:
     RESULT_WINNER = 1
     RESULT_LOSER = 2
 
+    GAME_PROTOCOLS = {
+        "sc2" : {
+            "protocol":  "s2protocol",
+            "programId": "S2"
+        },
+        "hero": {
+            "protocol":  "heroprotocol",
+            "programId": "Hero"
+        }
+    }
 
-    ## Constructor of teSc2ReplayParser.
+
+    ## Constructor of teBlizzardReplayParser.
     #
     #  Creates an instance of the mpq-archive reader, reads the replay header
     #  to find out the base build of the replay and therefore load the correct
     #  protocol version. Will raise an exception if the basebuild is unknown.
-    def __init__(self, replayFilename):
+    #
+    #  Fallback to sc2 for backward compatible reasons
+    def __init__(self, replayFilename, game="sc2"):
+        if game not in self.GAME_PROTOCOLS:
+            raise UnknownGameException(game)
+
+        self.game = game
         self.replayFilename = replayFilename
         self.mpqArchive = mpyq.MPQArchive(self.replayFilename)
 
         # The header's baseBuild determines which protocol to use (this works with every version)
         baseBuild = self.getHeader()['m_version']['m_baseBuild']
-        packageName = 's2protocol'
-        if len(__package__) > 0:
+        packageName = self.GAME_PROTOCOLS[game]["protocol"]
+        if __package__ is not None:
             packageName = '%s.%s' % (__package__, packageName)
-
         try:
             # Will raise an ImportError-exception if the basebuild is unknown
             self.protocol = __import__(packageName + '.protocol%s' % baseBuild, fromlist=[packageName])
@@ -273,8 +291,8 @@ class teSc2ReplayParser:
     #  guaranteed to be globally unique!
     #  But it's unique enough to determine the rounds of a bestOfX match for
     #  example. That means that every replay from any participant (player,
-    #  observer, etc.) of a single SC2 match generates the same hash, so you
-    #  know which replays belong to one SC2 match and therefore for one round
+    #  observer, etc.) of a single match generates the same hash, so you
+    #  know which replays belong to one match and therefore for one round
     #  in a bestOfX match.
     #  For generating the hash, the userIds assigned to the toonHandles of every
     #  player is used, plus the randomSeed, which is randomly generated per
@@ -329,7 +347,7 @@ class teSc2ReplayParser:
                 clanTag = ''
                 userId = -1
                 # AIs also don't have a toon, but we need them! So generate an 'invalid' one out of the playerId
-                toonHandle = '0-S2-0-' + str(player['m_playerId'])
+                toonHandle = '0-' + str(self.GAME_PROTOCOLS[self.game]["programId"]) + '-0-' + str(player['m_playerId'])
             elif slot['m_userId'] != None:
                 userId = slot['m_userId']
                 playerName = self.stripHtmlFromString(playersInLobby[userId]['m_name'] if playersInLobby[userId]['m_name'] else '')
@@ -400,10 +418,10 @@ class teSc2ReplayParser:
                             'build': header['m_version']['m_build']},
                 'gamemode': gameMode,
                 'gamespeed': self.gamespeeds[initData['m_syncLobbyState']['m_gameDescription']['m_gameSpeed']],
-                'host_user_id': initData['m_syncLobbyState']['m_lobbyState']['m_hostUserId'],
+                'host_user_id': initData['m_syncLobbyState']['m_lobbyState']['m_hostUserId'] or -1,
                 'players': players,
                 'observers': observers}
-# End class teSc2ReplayParser
+# End class teBlizzardReplayParser
 
 class UnknownBaseBuildException(Exception):
     def __init__(self, baseBuild):
@@ -411,3 +429,10 @@ class UnknownBaseBuildException(Exception):
 
     def __str__(self):
         return 'Unsupported base build %d' % self.baseBuild
+
+class UnknownGameException(Exception):
+    def __init__(self, game):
+        self.game = game
+
+    def __str__(self):
+        return 'Unsupported game %s' % self.game
