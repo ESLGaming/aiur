@@ -2,7 +2,7 @@ from datetime import datetime
 import hashlib
 
 # Library to read Blizzards MPYQ files
-from s2protocol.mpyq import mpyq
+import mpyq
 # Import the oldest protocol to read the replay header, which works with every
 # replay version
 from s2protocol import protocol15405
