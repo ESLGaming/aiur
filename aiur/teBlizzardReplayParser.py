@@ -3,13 +3,10 @@ import hashlib
 
 # Library to read Blizzards MPYQ files
 import mpyq
-# Import the oldest protocol to read the replay header, which works with every
-# replay version
-from s2protocol import protocol15405
-from heroprotocol import protocol29406
 
+# sc2 replay protocols
+from s2protocol import versions
 
-## Evaluates blizzard based replays and provides several methods to get data out of it.
 #
 #  Currently provides these methods/data:
 #  - Get the match winner
@@ -89,7 +86,7 @@ class teBlizzardReplayParser:
             packageName = '%s.%s' % (__package__, packageName)
         try:
             # Will raise an ImportError-exception if the basebuild is unknown
-            self.protocol = __import__(packageName + '.protocol%s' % baseBuild, fromlist=[packageName])
+            self.protocol = versions.build(baseBuild)
         except ImportError:
             raise UnknownBaseBuildException(baseBuild)
 
@@ -97,7 +94,7 @@ class teBlizzardReplayParser:
     def getHeader(self):
         if len(self.replayHeader) <= 0:
             # Read the protocol header, this can be read with any protocol
-            self.replayHeader = protocol15405.decode_replay_header(self.mpqArchive.header['user_data_header']['content'])
+            self.replayHeader = versions.latest().decode_replay_header(self.mpqArchive.header['user_data_header']['content'])
 
         return self.replayHeader
 

@@ -15,6 +15,7 @@ code. Once you have cloned the aiur repository, you can get the submodule code
 by executing these commands in the repository directory:
 
 ```bash
+$ pip install -r requirements.txt
 $ git submodule init
 $ git submodule update
 ```
