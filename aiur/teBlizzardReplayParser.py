@@ -101,6 +101,7 @@ class teBlizzardReplayParser:
     def getDetails(self):
         if len(self.replayDetails) <= 0:
             self.replayDetails = self.protocol.decode_replay_details(self.mpqArchive.read_file('replay.details'))
+
             # Some old replays also (adidtionally to the initData) have these senseless cache_handles including invalid unicode chars
             # del self.replayDetails['m_cacheHandles']
 
@@ -160,6 +161,9 @@ class teBlizzardReplayParser:
     #
     #  @return string The tydied string.
     def stripHtmlFromString(self, string):
+        if not isinstance(string,str):
+            string = string.decode('utf-8')
+
         return string.replace('<sp/>', ' ')
 
     ## Remove zero bytes (\x00) from a string.
@@ -171,7 +175,10 @@ class teBlizzardReplayParser:
     #
     #  @return string The tydied string.
     def stripZeroBytesFromString(self, string):
-        return str(string.strip(u'\u0000'))
+        if not isinstance(string,str):
+            string = string.decode('utf-8')
+
+        return string.strip(u'\u0000')
 
     ## Convert a Windows NT timestamp to a UNIX timestamp.
     #
@@ -306,12 +313,12 @@ class teBlizzardReplayParser:
         # Iterate over our playerList and concatinate the userId with the
         # toonHandle
         for key, player in players['humans'].items():
-            hashData.append(str(player['user_id']) + ':' + player['toon']['handle'])
+            hashData.append(str(player['user_id']) + ':' + str(player['toon']['handle']))
         # Also append the randomSeed, which makes it kinda "unique"
         hashData.append(str(initData['m_syncLobbyState']['m_lobbyState']['m_randomSeed']))
 
         # Hash our data with the md5 algorithm and return it
-        return hashlib.md5(';'.join(hashData)).hexdigest()
+        return hashlib.md5(';'.join(hashData).encode('utf-8')).hexdigest()
 
     ## Returns the match document incl. various information about the match.
     #
@@ -381,11 +388,11 @@ class teBlizzardReplayParser:
                     matchWinnerTeam = data['team_id']
 
                 data.update({'player_id': player['m_playerId'],
-                             'toon': dict(data['toon'].items() + {'programId': player['m_toon']['m_programId'],
+                             'toon': dict(list(data['toon'].items()) + list({'programId': player['m_toon']['m_programId'],
                                                                   'region': player['m_toon']['m_region'],
                                                                   'id': player['m_toon']['m_id'],
-                                                                  'realm': player['m_toon']['m_realm']}.items()),
-                             'race': player['m_race'],
+                                                                  'realm': player['m_toon']['m_realm']}.items())),
+                             'race': player['m_race'].decode('utf-8'),
                              'result': player['m_result'],
                              'color': {'r': player['m_color']['m_r'],
                                        'g': player['m_color']['m_g'],
@@ -404,7 +411,7 @@ class teBlizzardReplayParser:
             playersPerTeam = len(players['humans']) / len(teams)
             gameMode = '%dv%d' % (playersPerTeam, playersPerTeam)
 
-        return {'mapname': details['m_title'],
+        return {'mapname': details['m_title'].decode("utf-8"),
                 'replay_hash': self.generateReplayHash(players),
                 'started_at': datetime.fromtimestamp(self.convertWindowsNtTimestampToUnixTimestamp(details['m_timeUTC'])).strftime('%Y-%m-%d %H:%M:%S'),
                 'utc_timezone': self.convertTimezoneOffsetToUtcTimezone(details['m_timeLocalOffset']),
@@ -413,7 +420,7 @@ class teBlizzardReplayParser:
                 'winner_team_id': matchWinnerTeam,
                 'version': {'number': str(header['m_version']['m_major']) + '.' + str(header['m_version']['m_minor']) + '.' + str(header['m_version']['m_revision']),
                             'build': header['m_version']['m_build']},
-                'gamemode': gameMode,
+                'gamemode': gameMode.decode("utf-8"),
                 'gamespeed': self.gamespeeds[initData['m_syncLobbyState']['m_gameDescription']['m_gameSpeed']],
                 'host_user_id': initData['m_syncLobbyState']['m_lobbyState']['m_hostUserId'] or -1,
                 'players': players,
